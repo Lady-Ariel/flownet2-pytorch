@@ -148,14 +148,14 @@ if __name__ == '__main__':
             block.log('Validation Input: {}'.format(' '.join([str([d for d in x.size()]) for x in validation_dataset[0][0]])))
             block.log('Validation Targets: {}'.format(' '.join([str([d for d in x.size()]) for x in validation_dataset[0][1]])))
             validation_loader = DataLoader(validation_dataset, batch_size=args.effective_batch_size, shuffle=False, **gpuargs)
-
+        '''
         if exists(args.inference_dataset_root):
             inference_dataset = args.inference_dataset_class(args, False, **tools.kwargs_from_args(args, 'inference_dataset'))
             block.log('Inference Dataset: {}'.format(args.inference_dataset))
             block.log('Inference Input: {}'.format(' '.join([str([d for d in x.size()]) for x in inference_dataset[0][0]])))
             block.log('Inference Targets: {}'.format(' '.join([str([d for d in x.size()]) for x in inference_dataset[0][1]])))
             inference_loader = DataLoader(inference_dataset, batch_size=args.effective_inference_batch_size, shuffle=False, **inf_gpuargs)
-
+        '''
     # Dynamically load model and loss class with parameters passed in via "--model_[param]=[value]" or "--loss_[param]=[value]" arguments
     with tools.TimerBlock("Building {} model".format(args.model)) as block:
         class ModelAndLoss(nn.Module):
@@ -400,7 +400,17 @@ if __name__ == '__main__':
 
     for epoch in progress:
         if args.inference or (args.render_validation and ((epoch - 1) % args.validation_frequency) == 0):
-            stats = inference(args=args, epoch=epoch - 1, data_loader=inference_loader, model=model_and_loss, offset=offset)
+            path = args.inference_dataset_root
+            for root,  dirs,  files in os.walk(path):
+                for name in dirs:
+                  DIR = os.path.join(root,name)
+                  args.inference_dataset_root = DIR
+                  print(args.inference_dataset_root)
+                  inference_dataset = args.inference_dataset_class(args, False, **tools.kwargs_from_args(args, 'inference_dataset'))
+                  inference_loader = DataLoader(inference_dataset, batch_size=args.effective_inference_batch_size, shuffle=False, **inf_gpuargs)
+
+                  stats = inference(args=args, epoch=epoch - 1, dir_name = name, data_loader=inference_loader, model=model_and_loss, offset=offset)
+
             offset += 1
 
         if not args.skip_validation and ((epoch - 1) % args.validation_frequency) == 0:
