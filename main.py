@@ -1,3 +1,5 @@
+%%file flownet2-pytorch/main_test.py
+
 #!/usr/bin/env python
 
 import torch
@@ -12,6 +14,7 @@ import numpy as np
 from tqdm import tqdm
 from glob import glob
 from os.path import *
+from easydict import EasyDict as edict
 
 import models, losses, datasets
 from utils import flow_utils, tools
@@ -148,14 +151,14 @@ if __name__ == '__main__':
             block.log('Validation Input: {}'.format(' '.join([str([d for d in x.size()]) for x in validation_dataset[0][0]])))
             block.log('Validation Targets: {}'.format(' '.join([str([d for d in x.size()]) for x in validation_dataset[0][1]])))
             validation_loader = DataLoader(validation_dataset, batch_size=args.effective_batch_size, shuffle=False, **gpuargs)
-        '''
-        if exists(args.inference_dataset_root):
-            inference_dataset = args.inference_dataset_class(args, False, **tools.kwargs_from_args(args, 'inference_dataset'))
-            block.log('Inference Dataset: {}'.format(args.inference_dataset))
-            block.log('Inference Input: {}'.format(' '.join([str([d for d in x.size()]) for x in inference_dataset[0][0]])))
-            block.log('Inference Targets: {}'.format(' '.join([str([d for d in x.size()]) for x in inference_dataset[0][1]])))
-            inference_loader = DataLoader(inference_dataset, batch_size=args.effective_inference_batch_size, shuffle=False, **inf_gpuargs)
-        '''
+
+#        if exists(args.inference_dataset_root):
+#            inference_dataset = args.inference_dataset_class(args, False, **tools.kwargs_from_args(args, 'inference_dataset'))
+#            block.log('Inference Dataset: {}'.format(args.inference_dataset))
+#            block.log('Inference Input: {}'.format(' '.join([str([d for d in x.size()]) for x in inference_dataset[0][0]])))
+#            block.log('Inference Targets: {}'.format(' '.join([str([d for d in x.size()]) for x in inference_dataset[0][1]])))
+#            inference_loader = DataLoader(inference_dataset, batch_size=args.effective_inference_batch_size, shuffle=False, **inf_gpuargs)
+
     # Dynamically load model and loss class with parameters passed in via "--model_[param]=[value]" or "--loss_[param]=[value]" arguments
     with tools.TimerBlock("Building {} model".format(args.model)) as block:
         class ModelAndLoss(nn.Module):
@@ -338,12 +341,12 @@ if __name__ == '__main__':
         return total_loss / float(batch_idx + 1), (batch_idx + 1)
 
     # Reusable function for inference
-    def inference(args, epoch, data_loader, model, offset=0):
+    def inference(args, epoch, dir_name, data_loader, model, offset=0):
 
         model.eval()
         
         if args.save_flow or args.render_validation:
-            flow_folder = "{}/inference/{}.epoch-{}-flow-field".format(args.save,args.name.replace('/', '.'),epoch)
+            flow_folder = "{}/inference/Flow/{}".format(args.save,dir_name)
             if not os.path.exists(flow_folder):
                 os.makedirs(flow_folder)
 
@@ -401,8 +404,10 @@ if __name__ == '__main__':
     for epoch in progress:
         if args.inference or (args.render_validation and ((epoch - 1) % args.validation_frequency) == 0):
             path = args.inference_dataset_root
+            print(path)
             for root,  dirs,  files in os.walk(path):
                 for name in dirs:
+                  print(name)
                   DIR = os.path.join(root,name)
                   args.inference_dataset_root = DIR
                   print(args.inference_dataset_root)
@@ -411,7 +416,7 @@ if __name__ == '__main__':
 
                   stats = inference(args=args, epoch=epoch - 1, dir_name = name, data_loader=inference_loader, model=model_and_loss, offset=offset)
 
-            offset += 1
+        offset += 1
 
         if not args.skip_validation and ((epoch - 1) % args.validation_frequency) == 0:
             validation_loss, _ = train(args=args, epoch=epoch - 1, start_iteration=global_iteration, data_loader=validation_loader, model=model_and_loss, optimizer=optimizer, logger=validation_logger, is_validate=True, offset=offset)
