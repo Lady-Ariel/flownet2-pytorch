@@ -18,11 +18,7 @@ class StaticRandomCrop(object):
         self.w1 = random.randint(0, w - self.tw)
 
     def __call__(self, img):
-        print("Random")
-        print(self.h1)
-        print(self.h1+self.th)
-        #return img[self.h1:(self.h1+self.th), self.w1:(self.w1+self.tw),:]
-        return img
+        return img[self.h1:(self.h1+self.th), self.w1:(self.w1+self.tw),:]
 
 class StaticCenterCrop(object):
     def __init__(self, image_size, crop_size):
@@ -32,7 +28,7 @@ class StaticCenterCrop(object):
         print((self.h-self.th)//2)
         print((self.h+self.th)//2)
         #return img[(self.h-self.th)//2:(self.h+self.th)//2, (self.w-self.tw)//2:(self.w+self.tw)//2,:]
-        return img
+        return img[:,:,:]
 
 class MpiSintel(data.Dataset):
     def __init__(self, args, is_cropped = False, root = '', dstype = 'clean', replicates = 1):
