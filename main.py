@@ -1,5 +1,3 @@
-%%file flownet2-pytorch/main_test.py
-
 #!/usr/bin/env python
 
 import torch
